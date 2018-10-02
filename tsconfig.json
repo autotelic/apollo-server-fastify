@@ -1,20 +1,11 @@
 {
+  "extends": "../../tsconfig",
   "compilerOptions": {
-    "target": "es2016",
-    "module": "commonjs",
-    "moduleResolution": "node",
-    "esModuleInterop": true,
-    "sourceMap": true,
-    "declaration": true,
-    "declarationMap": true,
-    "removeComments": true,
-    "strict": true,
+    "rootDir": "./src",
+    "outDir": "./dist",
     "noImplicitAny": true,
-    "noImplicitReturns": true,
-    "noFallthroughCasesInSwitch": true,
-    "noUnusedParameters": true,
-    "noUnusedLocals": true,
-    "lib": ["es2017", "esnext.asynciterable"],
-    "types": ["node", "jest"]
-  }
+    "strictNullChecks": false
+  },
+  "include": ["src/**/*"],
+  "exclude": ["**/__tests__", "**/__mocks__"]
 }
