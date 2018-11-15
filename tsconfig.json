@@ -1,11 +1,12 @@
 {
+  "extends": "../../tsconfig.base",
   "compilerOptions": {
-    "composite": true
+    "rootDir": "./src",
+    "outDir": "./dist",
   },
-  "files": [],
-  "include": [],
+  "include": ["src/**/*"],
+  "exclude": ["**/__tests__", "**/__mocks__"],
   "references": [
-    { "path": "./tsconfig.build.json" },
-    { "path": "./tsconfig.test.json" },
+    { "path": "../apollo-server-core" },
   ]
 }
