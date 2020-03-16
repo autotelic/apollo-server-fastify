@@ -8,7 +8,7 @@ import {
   processFileUploads,
 } from 'apollo-server-core';
 import { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
-import { IncomingMessage, ServerResponse, Server } from 'http';
+import { IncomingMessage, OutgoingMessage, ServerResponse, Server } from 'http';
 import { graphqlFastify } from './fastifyApollo';
 import { GraphQLOperation } from 'graphql-upload';
 
@@ -170,11 +170,17 @@ export class ApolloServer extends ApolloServerBase {
             beforeHandlers.push(fileUploadMiddleware(this.uploadsConfig, this));
           }
 
+          const graphQLServerOptions = this.graphQLServerOptions.bind(this);
+          const applyContextArgs = async (
+            request?: FastifyRequest<IncomingMessage>,
+            reply?: FastifyReply<OutgoingMessage>,
+          ) => graphQLServerOptions({ request, reply });
+
           instance.route({
             method: ['GET', 'POST'],
             url: '/',
             beforeHandler: beforeHandlers,
-            handler: await graphqlFastify(this.graphQLServerOptions.bind(this)),
+            handler: await graphqlFastify(applyContextArgs),
           });
         },
         {
