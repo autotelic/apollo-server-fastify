@@ -1,8 +1,14 @@
 {
-  "extends": "../../../../tsconfig.test.base",
-  "include": ["**/*"],
-  "references": [
-    { "path": "../../" },
-    { "path": "../../../apollo-server-integration-testsuite" },
-  ]
+  "extends": "../../tsconfig.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "esModuleInterop": true,
+    "lib": ["es2017", "es2019.array", "esnext.asynciterable"],
+    "types": ["node", "jest"],
+    "paths": {
+      "__mocks__/*": ["__mocks__/*"],
+      "*": ["types/*"]
+    }
+  },
+  "include": ["**/*"]
 }

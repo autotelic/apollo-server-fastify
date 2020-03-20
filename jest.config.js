@@ -1,3 +1,17 @@
-const config = require('../../jest.config.base');
+const { defaults } = require("jest-config");
 
-module.exports = Object.assign(Object.create(null), config);
+module.exports = {
+  testEnvironment: "node",
+  preset: "ts-jest",
+  testMatch: null,
+  testRegex: "/__tests__/.*\\.test\\.(js|ts)$",
+  testPathIgnorePatterns: ["/node_modules/", "/dist/"],
+  moduleFileExtensions: [...defaults.moduleFileExtensions, "ts", "tsx"],
+  clearMocks: true,
+  globals: {
+    "ts-jest": {
+      tsConfig: "<rootDir>/src/__tests__/tsconfig.json",
+      diagnostics: false
+    }
+  }
+};
