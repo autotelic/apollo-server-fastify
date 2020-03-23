@@ -9,6 +9,10 @@
   "engines": {
     "node": ">=6"
   },
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/autotelic/apollo-server-fastify.git"
+  },
   "scripts": {
     "compile": "tsc --build tsconfig.json",
     "compile:clean": "tsc --build tsconfig.json --clean",
@@ -68,8 +72,5 @@
     "hooks": {
       "pre-commit": "lint-staged"
     }
-  },
-  "publishConfig": {
-    "registry": "https://npm.pkg.github.com/"
   }
 }
