@@ -15,7 +15,7 @@ import {
   NODE_MAJOR_VERSION,
   testApolloServer,
   createServerInfo,
-} from 'apollo-server-integration-testsuite';
+} from '../../__integration__';
 
 const typeDefs = gql`
   type Query {

@@ -4,7 +4,7 @@ import { ApolloServer } from '../ApolloServer';
 import testSuite, {
   schema as Schema,
   CreateAppOptions,
-} from 'apollo-server-integration-testsuite';
+} from '../../__integration__';
 import { GraphQLOptions, Config } from 'apollo-server-core';
 
 async function createApp(options: CreateAppOptions = {}) {

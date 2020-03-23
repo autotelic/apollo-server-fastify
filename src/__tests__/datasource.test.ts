@@ -5,7 +5,7 @@ import { RESTDataSource } from 'apollo-datasource-rest';
 import { createApolloFetch } from 'apollo-fetch';
 import { ApolloServer } from '../ApolloServer';
 
-import { createServerInfo } from 'apollo-server-integration-testsuite';
+import { createServerInfo } from '../../__integration__';
 import { gql } from '../index';
 
 const restPort = 4003;
