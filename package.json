@@ -12,6 +12,7 @@
   "scripts": {
     "compile": "tsc --build tsconfig.json",
     "compile:clean": "tsc --build tsconfig.json --clean",
+    "lint": "eslint '**/**'",
     "test": "jest",
     "watch": "tsc --build tsconfig.json --watch"
   },
@@ -27,6 +28,8 @@
   "devDependencies": {
     "@types/jest": "24.9.1",
     "@types/node": "8.10.59",
+    "@typescript-eslint/eslint-plugin": "^2.25.0",
+    "@typescript-eslint/parser": "^2.25.0",
     "apollo-datasource-rest": "^0.8.0",
     "apollo-engine-reporting-protobuf": "^0.4.4",
     "apollo-fetch": "^0.7.0",
@@ -35,6 +38,9 @@
     "apollo-link-persisted-queries": "^0.2.2",
     "apollo-server-plugin-response-cache": "^0.4.0",
     "body-parser": "^1.19.0",
+    "eslint": "^6.8.0",
+    "eslint-config-prettier": "^6.10.1",
+    "eslint-plugin-prettier": "^3.1.2",
     "express": "^4.17.1",
     "fastify": "1.14.6",
     "form-data": "2.5.1",
@@ -43,8 +49,8 @@
     "jest": "24.9.0",
     "jest-config": "24.9.0",
     "js-sha256": "^0.9.0",
+    "lint-staged": "^10.0.8",
     "prettier": "1.19.1",
-    "pretty-quick": "^2.0.1",
     "supertest": "^4.0.2",
     "ts-jest": "24.3.0",
     "typescript": "3.8.3"
@@ -52,9 +58,15 @@
   "peerDependencies": {
     "graphql": "^0.12.0 || ^0.13.0 || ^14.0.0 || ^15.0.0-rc.2"
   },
+  "lint-staged": {
+    "*": [
+      "prettier --write",
+      "eslint --fix"
+    ]
+  },
   "husky": {
     "hooks": {
-      "pre-commit": "pretty-quick --staged"
+      "pre-commit": "lint-staged"
     }
   }
 }

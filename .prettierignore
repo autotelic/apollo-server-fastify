@@ -1,1 +1,6 @@
 dist/
+.editorconfig
+.eslintignore
+.gitignore
+.prettierignore
+.npmignore

@@ -1,5 +1,3 @@
-[![npm version](https://badge.fury.io/js/apollo-server-fastify.svg)](https://badge.fury.io/js/apollo-server-fastify) [![Build Status](https://circleci.com/gh/apollographql/apollo-server.svg?style=svg)](https://circleci.com/gh/apollographql/apollo-server) [![Join the community on Spectrum](https://withspectrum.github.io/badge/badge.svg)](https://spectrum.chat/apollo)
-
 This is a self contained version [apollo-server-fastify](https://github.com/apollographql/apollo-server/tree/master/packages/apollo-server-fastify), completely detatched from the [apollo-server](https://github.com/apollographql/apollo-server) monorepo. It is based off of [this fork of apollo-server](https://github.com/autotelic/apollo-server).
 
 ---

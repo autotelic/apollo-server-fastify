@@ -1,0 +1,4 @@
+*.md
+__integration__
+__mocks__
+**/__tests__
