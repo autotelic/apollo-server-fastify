@@ -22,7 +22,7 @@
   },
   "dependencies": {
     "@apollographql/graphql-playground-html": "1.6.24",
-    "apollo-server-core": "2.11.0",
+    "apollo-server-core": "2.14.2",
     "apollo-server-types": "0.3.0",
     "fastify-accepts": "^1.0.0",
     "fastify-cors": "^3.0.3",
