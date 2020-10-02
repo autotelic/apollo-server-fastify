@@ -46,7 +46,7 @@ describe('apollo-server-fastify', () => {
     },
     async () => {
       if (server) await server.stop();
-      if (app) await new Promise(resolve => app.close(() => resolve()));
+      if (app) await app.close();
       if (httpServer && httpServer.listening) await httpServer.close();
     },
   );
@@ -64,7 +64,10 @@ describe('apollo-server-fastify', () => {
     options: Partial<ServerRegistration> = {},
     mockDecorators: boolean = false,
   ) {
-    server = new ApolloServer(serverOptions);
+    server = new ApolloServer({
+      stopOnTerminationSignals: false,
+      ...serverOptions,
+    });
     app = fastify();
 
     if (mockDecorators) {
@@ -83,7 +86,7 @@ describe('apollo-server-fastify', () => {
 
   afterEach(async () => {
     if (server) await server.stop();
-    if (app) await new Promise(resolve => app.close(() => resolve()));
+    if (app) await app.close();
     if (httpServer) await httpServer.close();
   });
 
@@ -93,13 +96,13 @@ describe('apollo-server-fastify', () => {
     });
   });
 
-  describe('applyContextArgs', () => {
+  describe('createGraphQLServerOptions', () => {
     it('provides FastifyRequest and FastifyReply to ContextFunction', async () => {
       interface ContextArgs {
-        request: FastifyRequest<IncomingMessage> & {
+        request: FastifyRequest & {
           requestDecorator: () => any;
         };
-        reply: FastifyReply<OutgoingMessage> & { replyDecorator: () => any };
+        reply: FastifyReply & { replyDecorator: () => any };
       }
 
       const context = ({ request, reply }: ContextArgs) => {
@@ -262,7 +265,7 @@ describe('apollo-server-fastify', () => {
               reject(error);
             } else {
               expect(body).toMatch('GraphQLPlayground');
-              expect(body).toMatch(`"editor.theme": "light"`);
+              expect(body).toMatch(`\"editor.theme\":\"light\"`);
               expect(body).toMatch(defaultQuery);
               expect(body).toMatch(endpoint);
               expect(response.statusCode).toEqual(200);
@@ -441,9 +444,9 @@ describe('apollo-server-fastify', () => {
         });
       });
     });
-    // NODE: Skip Node.js 6, but only because `graphql-upload`
-    // doesn't support it.
-    (NODE_MAJOR_VERSION === 6 ? describe.skip : describe)(
+    // NODE: Skip Node.js 6 and 14, but only because `graphql-upload`
+    // doesn't support them on the version we use.
+    ([6, 14].includes(NODE_MAJOR_VERSION) ? describe.skip : describe)(
       'file uploads',
       () => {
         it('enabled uploads', async () => {

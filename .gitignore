@@ -26,3 +26,9 @@ node_modules/
 
 # Intellij Configuration Files
 .idea/
+
+# VSCode
+.vscode
+
+# nodenv
+.node-version
