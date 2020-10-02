@@ -1,14 +1,10 @@
 ## apollo-server-fastify
 
-This is a self contained version of [apollo-server-fastify], completely detatched from the [apollo-server] monorepo. It is based off of [this fork of apollo-server].
-
-It differs from the current version of [apollo-server-fastify] in the following ways:
-
-- The Fastify `reply` is now accessible within the object passed to the `config.context` function [apollographql/apollo-server#3895]
-- The usage of `beforeHandler` has been replaced with `preHandler` [apollographql/apollo-server#2391]
-  - The versions of [fastify-accepts] and [fastify-cors] have also been updated.
+This is a self contained version of [apollo-server-fastify], completely detached from the [Apollo Server] monorepo. It has been modified to be compatible with [Fastify] v3.
 
 ### Usage
+
+_*Only compatible with [Fastify] v3 or higher*_.
 
 ```shell
 npm install @autotelic/apollo-server-fastify
@@ -36,8 +32,8 @@ const app = require('fastify')();
 ```
 
 [apollo-server-fastify]: https://github.com/apollographql/apollo-server/tree/master/packages/apollo-server-fastify
-[apollo-server]: https://github.com/apollographql/apollo-server
-[this fork of apollo-server]: https://github.com/autotelic/apollo-server
+[apollo server]: https://github.com/apollographql/apollo-server
+[fastify]: https://www.fastify.io/docs/latest/
 [fastify-accepts]: https://github.com/fastify/fastify-accepts
 [fastify-cors]: https://github.com/fastify/fastify-accepts
 [apollographql/apollo-server#3895]: https://github.com/apollographql/apollo-server/pull/3895
