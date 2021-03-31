@@ -16,7 +16,7 @@ import {
 } from 'fastify';
 import { IncomingMessage, ServerResponse, Server } from 'http';
 import { graphqlFastify } from './fastifyApollo';
-import { GraphQLOperation } from 'graphql-upload';
+import { GraphQLOperation } from '@apollographql/graphql-upload-8-fork';
 
 const fastJson = require('fast-json-stringify');
 
@@ -91,6 +91,8 @@ export class ApolloServer extends ApolloServerBase {
   }: ServerRegistration = {}): FastifyPluginAsync {
     this.graphqlPath = path ? path : '/graphql';
     const promiseWillStart = this.willStart();
+
+    this.ensureStarting();
 
     return async (
       app: FastifyInstance<Server, IncomingMessage, ServerResponse>,

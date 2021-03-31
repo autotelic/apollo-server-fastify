@@ -45,6 +45,7 @@ import {
   ApolloServerPluginInlineTrace,
   ApolloServerPluginUsageReporting,
   ApolloServerPluginUsageReportingOptions,
+  GraphQLServiceConfig,
 } from 'apollo-server-core';
 import { GraphQLExtension, GraphQLResponse } from 'graphql-extensions';
 import { TracingFormat } from 'apollo-tracing';
@@ -123,28 +124,31 @@ const makeGatewayMock = ({
   unsubscribeSpy?: () => void;
   executor?: GraphQLExecutor;
 } = {}) => {
+  let resolution: GraphQLServiceConfig | null = null;
+  let rejection: Error | null = null;
   const eventuallyAssigned = {
-    resolveLoad: null as ({ schema, executor }) => void,
-    rejectLoad: null as (err: Error) => void,
+    resolveLoad: (config: GraphQLServiceConfig) => {
+      resolution = config;
+    },
+    rejectLoad: (err: Error) => {
+      rejection = err;
+    },
     triggerSchemaChange: null as (newSchema) => void,
   };
-  const mockedLoadResults = new Promise<{
-    schema: GraphQLSchema;
-    executor: GraphQLExecutor;
-  }>((resolve, reject) => {
-    eventuallyAssigned.resolveLoad = ({ schema, executor }) => {
-      resolve({ schema, executor });
-    };
-    eventuallyAssigned.rejectLoad = (err: Error) => {
-      reject(err);
-    };
-  });
 
   const mockedGateway: GraphQLService = {
     executor,
-    load: options => {
+    load: async options => {
       optionsSpy(options);
-      return mockedLoadResults;
+      // Make sure it's async
+      await new Promise(res => setImmediate(res));
+      if (rejection) {
+        throw rejection;
+      }
+      if (resolution) {
+        return resolution;
+      }
+      throw Error('Neither resolving nor rejecting?');
     },
     onSchemaChange: callback => {
       eventuallyAssigned.triggerSchemaChange = callback;
@@ -165,7 +169,7 @@ export interface ServerInfo<AS extends ApolloServerBase> {
 }
 
 export interface CreateServerFunc<AS extends ApolloServerBase> {
-  (config: Config): Promise<ServerInfo<AS>>;
+  (config: Config, suppressStartCall?: boolean): Promise<ServerInfo<AS>>;
 }
 
 export interface StopServerFunc {
@@ -388,6 +392,22 @@ export function testApolloServer<AS extends ApolloServerBase>(
           expect(executor).toHaveBeenCalled();
         });
 
+        it('rejected load promise is thrown by server.start', async () => {
+          const { gateway, triggers } = makeGatewayMock();
+
+          const loadError = new Error(
+            'load error which should be be thrown by start',
+          );
+          triggers.rejectLoad(loadError);
+
+          expect(
+            createApolloServer({
+              gateway,
+              subscriptions: false,
+            }),
+          ).rejects.toThrowError(loadError);
+        });
+
         it('rejected load promise acts as an error boundary', async () => {
           const executor = jest.fn();
           executor.mockResolvedValueOnce({
@@ -406,10 +426,13 @@ export function testApolloServer<AS extends ApolloServerBase>(
 
           triggers.rejectLoad(new Error('load error which should be masked'));
 
-          const { url: uri } = await createApolloServer({
-            gateway,
-            subscriptions: false,
-          });
+          const { url: uri } = await createApolloServer(
+            {
+              gateway,
+              subscriptions: false,
+            },
+            true,
+          );
 
           const apolloFetch = createApolloFetch({ uri });
           const result = await apolloFetch({ query: '{testString}' });
@@ -426,7 +449,11 @@ export function testApolloServer<AS extends ApolloServerBase>(
             }),
           );
           expect(consoleErrorSpy).toHaveBeenCalledWith(
-            'This data graph is missing a valid configuration. ' +
+            'Apollo Server was started implicitly and an error occurred during startup. ' +
+              '(Consider calling `await server.start()` immediately after ' +
+              '`server = new ApolloServer()` so you can handle these errors directly before ' +
+              'starting your web server.) All GraphQL requests will now fail. The startup error ' +
+              'was: ' +
               'load error which should be masked',
           );
           expect(executor).not.toHaveBeenCalled();
@@ -1160,6 +1187,52 @@ export function testApolloServer<AS extends ApolloServerBase>(
             );
           });
 
+          it('sets the trace key to unknown operation for missing operation', async () => {
+            await setupApolloServerAndFetchPair();
+
+            await apolloFetch({
+              query: `query notQ {justAField}`,
+              operationName: 'q',
+            });
+
+            const reports = await reportIngress.promiseOfReports;
+            expect(reports.length).toBe(1);
+
+            expect(Object.keys(reports[0].tracesPerQuery)[0]).toBe(
+              '## GraphQLUnknownOperationName\n',
+            );
+          });
+
+          it('sets the trace key to parse failure when non-parseable gql', async () => {
+            await setupApolloServerAndFetchPair();
+
+            await apolloFetch({
+              query: `{nonExistentField`,
+            });
+
+            const reports = await reportIngress.promiseOfReports;
+            expect(reports.length).toBe(1);
+
+            expect(Object.keys(reports[0].tracesPerQuery)[0]).toBe(
+              '## GraphQLParseFailure\n',
+            );
+          });
+
+          it('sets the trace key to validation failure when invalid operation', async () => {
+            await setupApolloServerAndFetchPair();
+
+            await apolloFetch({
+              query: `{nonExistentField}`,
+            });
+
+            const reports = await reportIngress.promiseOfReports;
+            expect(reports.length).toBe(1);
+
+            expect(Object.keys(reports[0].tracesPerQuery)[0]).toBe(
+              '## GraphQLValidationFailure\n',
+            );
+          });
+
           it('sets the trace key to "-" when operationName is undefined', async () => {
             await setupApolloServerAndFetchPair();
 
@@ -1808,7 +1881,6 @@ export function testApolloServer<AS extends ApolloServerBase>(
           type Query {
             hi: String
           }
-
           type Subscription {
             num: Int
           }
@@ -1876,7 +1948,6 @@ export function testApolloServer<AS extends ApolloServerBase>(
             "graphql-js forces there to be a query type"
             hi: String
           }
-
           type Subscription {
             num: Int
           }
@@ -1955,7 +2026,6 @@ export function testApolloServer<AS extends ApolloServerBase>(
           type Query {
             hi: String
           }
-
           type Subscription {
             num: Int
           }
@@ -2033,7 +2103,6 @@ export function testApolloServer<AS extends ApolloServerBase>(
           type Query {
             hi: String
           }
-
           type Subscription {
             num: Int
           }
@@ -2111,7 +2180,6 @@ export function testApolloServer<AS extends ApolloServerBase>(
           type Query {
             hi: String
           }
-
           type Subscription {
             num: Int
           }
@@ -2167,7 +2235,6 @@ export function testApolloServer<AS extends ApolloServerBase>(
           type Query {
             hi: String
           }
-
           type Subscription {
             num: Int
           }
@@ -2505,11 +2572,9 @@ export function testApolloServer<AS extends ApolloServerBase>(
           title: String
           author: String
         }
-
         type Movie {
           title: String
         }
-
         type Query {
           books: [Book]
           movies: [Movie]
@@ -2574,11 +2639,9 @@ export function testApolloServer<AS extends ApolloServerBase>(
           title: String
           author: String
         }
-
         type Movie {
           title: String
         }
-
         type Query {
           books: [Book]
           movies: [Movie]
@@ -2642,7 +2705,7 @@ export function testApolloServer<AS extends ApolloServerBase>(
       });
 
       it('reports a total duration that is longer than the duration of its resolvers', async () => {
-        const { url: uri } = await createApolloServer({
+        const { url: uri, server } = await createApolloServer({
           typeDefs: allTypeDefs,
           resolvers,
         });
@@ -2738,13 +2801,29 @@ export function testApolloServer<AS extends ApolloServerBase>(
         const typeDefs = gql`
           type Query {
             cached: String @cacheControl(maxAge: 10)
+            asynccached: String @cacheControl(maxAge: 10)
+            asyncuncached: String @cacheControl(maxAge: 10)
+            asyncnowrite: String @cacheControl(maxAge: 10)
             uncached: String
             private: String @cacheControl(maxAge: 9, scope: PRIVATE)
           }
         `;
 
-        type FieldName = 'cached' | 'uncached' | 'private';
-        const fieldNames: FieldName[] = ['cached', 'uncached', 'private'];
+        type FieldName =
+          | 'cached'
+          | 'asynccached'
+          | 'asyncuncached'
+          | 'asyncnowrite'
+          | 'uncached'
+          | 'private';
+        const fieldNames: FieldName[] = [
+          'cached',
+          'asynccached',
+          'asyncuncached',
+          'asyncnowrite',
+          'uncached',
+          'private',
+        ];
         const resolverCallCount: Partial<Record<FieldName, number>> = {};
         const expectedResolverCallCount: Partial<Record<
           FieldName,
@@ -2789,16 +2868,40 @@ export function testApolloServer<AS extends ApolloServerBase>(
               shouldReadFromCache: (
                 requestContext: GraphQLRequestContext<any>,
               ) => {
-                return !requestContext.request.http.headers.get(
-                  'no-read-from-cache',
+                console.debug(
+                  'shouldReadFromCache',
+                  requestContext.request.query,
                 );
+                if (
+                  requestContext.request.http.headers.get('no-read-from-cache')
+                )
+                  return false;
+
+                if (requestContext.request.query.indexOf('asynccached') >= 0) {
+                  return new Promise(resolve => resolve(true));
+                }
+
+                if (
+                  requestContext.request.query.indexOf('asyncuncached') >= 0
+                ) {
+                  return new Promise(resolve => resolve(false));
+                }
+
+                return true;
               },
               shouldWriteToCache: (
                 requestContext: GraphQLRequestContext<any>,
               ) => {
-                return !requestContext.request.http.headers.get(
-                  'no-write-to-cache',
-                );
+                if (
+                  requestContext.request.http.headers.get('no-write-to-cache')
+                )
+                  return false;
+
+                if (requestContext.request.query.indexOf('asyncnowrite') >= 0) {
+                  return new Promise(resolve => resolve(false));
+                }
+
+                return true;
               },
             }),
           ],
@@ -2888,6 +2991,49 @@ export function testApolloServer<AS extends ApolloServerBase>(
             'max-age=10, public',
           );
           expect(httpHeader(result, 'age')).toBe(null);
+        }
+
+        // Cache hit async
+        {
+          await doFetch({
+            query: '{asynccached}',
+          });
+          expectCacheMiss('asynccached');
+
+          await doFetch({
+            query: '{asynccached}',
+          });
+          expectCacheHit('asynccached');
+        }
+
+        // Cache Miss async
+        {
+          await doFetch({
+            query: '{asyncuncached}',
+          });
+          expectCacheMiss('asyncuncached');
+
+          await doFetch({
+            query: '{asyncuncached}',
+          });
+          expectCacheMiss('asyncuncached');
+        }
+
+        // Even we cache read, we did not write (async)
+        {
+          const asyncNoWriteQuery = '{asyncnowrite}';
+          await doFetch({
+            query: asyncNoWriteQuery,
+          });
+          expectCacheMiss('asyncnowrite');
+
+          const result = await doFetch({
+            query: asyncNoWriteQuery,
+          });
+          expectCacheMiss('asyncnowrite');
+          expect(httpHeader(result, 'cache-control')).toBe(
+            'max-age=10, public',
+          );
         }
 
         // Cache hit.
@@ -3190,7 +3336,7 @@ export function testApolloServer<AS extends ApolloServerBase>(
 
         const { gateway, triggers } = makeGatewayMock({ optionsSpy });
         triggers.resolveLoad({ schema, executor: () => {} });
-        await createApolloServer({
+        const { server } = await createApolloServer({
           gateway,
           subscriptions: false,
           apollo: { key: 'service:tester:1234abc', graphVariant: 'staging' },

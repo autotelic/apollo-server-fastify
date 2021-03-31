@@ -37,7 +37,11 @@ describe('apollo-server-fastify', () => {
   let app: FastifyInstance;
 
   testApolloServer(
-    async options => {
+    async (options, suppressStartCall?: boolean) => {
+      server = new ApolloServer(options);
+      if (!suppressStartCall) {
+        await server.start();
+      }
       server = new ApolloServer(options);
       app = fastify();
       app.register(server.createHandler());

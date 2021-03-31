@@ -26,6 +26,7 @@ const server = new ApolloServer({
 const app = require('fastify')();
 
 (async function() {
+  await server.start();
   app.register(server.createHandler());
   await app.listen(3000);
 })();
